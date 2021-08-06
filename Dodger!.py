@@ -9,6 +9,7 @@ from tkinter import ttk
 from tkinter import *
 from random import *
 import time
+import statistics
 
 class Dodger():
     '''
@@ -16,11 +17,9 @@ class Dodger():
 
     In this game, you will control a circular character and try to dodge fast-falling objects. If one of the objects hits you, it's Game Over!
 
-    Please note that currently a bug exists that the program will only detect that the object hits into you WHILE YOU ARE MOVING. Therefore, be sure to continually move the mouse while playing
-    until this bug is fixed.
-
     I hope you enjoy this game!
     '''
+    coords = [0,0]
     def __init__(self):
         '''
         This is the constructor that creates the character customizer window.
@@ -96,7 +95,12 @@ class Dodger():
         self.game_window = tk.Tk()
         self.game_window.title("Dodger!")
         self.game_window_canvas = tk.Canvas(width = 600, height = 800, bg = 'black')
-        self.character = self.game_window_canvas.create_oval(275, 675, 325, 725, fill = self.color_choice)
+        x1 = 275
+        x2 = 325
+        y1 = 675
+        y2 = 725
+        self.character = self.game_window_canvas.create_oval(x1, y1, x2, y2, fill = self.color_choice)
+        self.coords = [statistics.mean((x1, x2)), statistics.mean((y1, y2))]
         self.create_game_widgets()
         self.spikes()
 
@@ -108,9 +112,8 @@ class Dodger():
         a Game Over is triggered.
         '''
         self.event = event
+        self.coords = [self.event.x, self.event.y]
         self.drawCharacter(self.event.x, self.event.y)
-        if self.spike_y_coord - 25 <= self.event.y <= self.spike_y_coord + 25 and self.spike_x_coord - 25 <= self.event.x <= self.spike_x_coord+25:
-                self.game_over()
 
     def drawObstacles(self):
         '''
@@ -126,6 +129,9 @@ class Dodger():
             self.game_window_canvas.update()
             self.spike_x_coord = self.rand_x
             self.spike_y_coord = 50 + 10*self.i
+            if self.spike_y_coord - 25 <= self.coords[1] <= self.spike_y_coord + 25 and self.spike_x_coord - 25 <= self.coords[0] <= self.spike_x_coord + 25:
+                self.game_over()
+
 
     def spikes(self):
         '''
