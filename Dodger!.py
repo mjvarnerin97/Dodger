@@ -1,7 +1,7 @@
 # Dodger!.py
 
 # Name: Michael Varnerin
-# Date: 21 July 2021
+# Date: 4 September 2021
 
 # Import Necessary Libraries
 import tkinter as tk
@@ -10,6 +10,7 @@ from tkinter import *
 from random import *
 import time
 import statistics
+import threading
 
 
 class Dodger:
@@ -28,6 +29,14 @@ class Dodger:
         self.char_window.title("Welcome to Dodger!")
         self.char_window_canvas = tk.Canvas(width=200, height=200)
         self.create_char_widgets()
+        try:
+            HighScore = open('HighScore.txt', 'r')
+        except FileNotFoundError:
+            HighScore = open('HighScore.txt.', 'w')
+            HighScore.write('0')
+            HighScore = open('HighScore.txt', 'r')
+        self.highScore = HighScore.read()
+        HighScore.close()
 
     def create_char_widgets(self):
         """
@@ -70,10 +79,12 @@ class Dodger:
         if self.color_choice in ['red', 'blue', 'green', 'pink', 'yellow', 'purple', 'orange']:
             self.char_window_canvas.create_text(100, 50, text="This will be your character:", font='Helvetica 11 bold')
             self.char_window_canvas.create_oval(75, 75, 125, 125, fill=self.color_choice)
-            button_game_start = ttk.Button(self.startGame_frame, text="            Start Game!            ", command=self.game)
+            button_game_start = ttk.Button(self.startGame_frame, text="            Start Game!            ",
+                                           command=self.game)
             button_game_start.grid(row=1, columnspan=4)
         else:
-            self.char_window_canvas.create_text(100, 100, text="Please enter a valid color.", fill='red', font='Helvetica 12 bold')
+            self.char_window_canvas.create_text(100, 100, text="Please enter a valid color.", fill='red',
+                                                font='Helvetica 12 bold')
             button_game_start = ttk.Button(self.startGame_frame, text="Please Enter a Valid Color")
             button_game_start.grid(row=1, columnspan=4)
         self.char_window_canvas.pack()
@@ -92,13 +103,17 @@ class Dodger:
         x2 = 325
         y1 = 675
         y2 = 725
-        self.score = -1
+        self.score = 0
         self.character = self.game_window_canvas.create_oval(x1, y1, x2, y2, fill=self.color_choice)
         self.coords = [statistics.mean((x1, x2)), statistics.mean((y1, y2))]
         self.running = True
         self.create_game_widgets()
-        while self.running:
-            self.spikes()
+        while self.score <= 15 and self.running:
+            self.spikes_easy()
+        while 15 < self.score <= 50 and self.running:
+            self.spikes_medium()
+        while self.score > 50 and self.running:
+            self.spikes_hard()
 
     def movement(self, event):
         """
@@ -109,29 +124,95 @@ class Dodger:
             self.coords = [self.event.x, self.event.y]
         self.drawCharacter(self.event.x, self.event.y)
 
-    def spikes(self):
+    def spikes_easy(self):
         """
-        This method draws the spikes and causes them to fall from the top of the screen to the bottom of the screen. Every time a spike is dodged, this command adds 1 to the player's score.
-        Additionally, in order to detect collision, this method contains a conditional statement that will check if the character's x and y coordinates match those of the falling spikes. If so,
+        This method draws one spike and causes it to fall from the top of the screen to the bottom of the screen. Every time a spike is dodged, this method adds 1 to the player's score.
+        Additionally, in order to detect collision, this method contains a conditional statement that will check if the character's x and y coordinates match those of the falling spike. If so,
         a Game Over is triggered.
         """
-        self.score += 1
         self.scoreLabel.configure(text="Score: " + str(self.score))
         self.rand_x = randrange(30, 570)
         spike = self.game_window_canvas.create_oval(self.rand_x, -20, self.rand_x + 40, 50, fill='grey')
-        self.timeDelay = .001
+        self.timeDelay = .01
         for i in range(83):
             self.i = i
-            time.sleep(self.timeDelay)
-            self.game_window_canvas.move(spike, 0, 10)
+            threading.Thread(time.sleep(self.timeDelay)).run()
+            threading.Thread(self.game_window_canvas.move(spike, 0, 10)).run()
             self.game_window_canvas.update()
             self.spike_x_coord = self.rand_x
             self.spike_y_coord = 50 + 10 * self.i
-            if self.spike_y_coord - 35 <= self.coords[1] <= self.spike_y_coord + 35 and self.spike_x_coord - 35 <= self.coords[0] <= self.spike_x_coord + 35:
+            if self.spike_y_coord - 35 <= self.coords[1] <= self.spike_y_coord + 35 and self.spike_x_coord - 35 <= \
+                    self.coords[0] <= self.spike_x_coord + 35:
                 self.game_over()
                 break
             elif not self.running:
                 break
+        self.score += 1
+
+    def spikes_medium(self):
+        """
+        This method draws two spikes and causes them to fall from the top of the screen to the bottom of the screen. Every time a spike is dodged, this method adds 1 to the player's score.
+        Additionally, in order to detect collision, this method contains a conditional statement that will check if the character's x and y coordinates match those of the falling spikes. If so,
+        a Game Over is triggered.
+        """
+        self.scoreLabel.configure(text="Score: " + str(self.score))
+        self.rand_x = randrange(30, 570)
+        self.rand_x2 = randrange(30, 570)
+        spike = self.game_window_canvas.create_oval(self.rand_x, -20, self.rand_x + 40, 50, fill='grey')
+        spike2 = self.game_window_canvas.create_oval(self.rand_x2, -20, self.rand_x2 + 40, 50, fill='grey')
+        self.timeDelay = .008
+        for i in range(83):
+            self.i = i
+            threading.Thread(time.sleep(self.timeDelay)).run()
+            threading.Thread(self.game_window_canvas.move(spike, 0, 10)).run()
+            threading.Thread(self.game_window_canvas.move(spike2, 0, 10)).run()
+            self.game_window_canvas.update()
+            self.spike_x_coord = self.rand_x
+            self.spike2_x_coord = self.rand_x2
+            self.spike_y_coord = 50 + 10 * self.i
+            if self.spike_y_coord - 35 <= self.coords[1] <= self.spike_y_coord + 35 and (
+                    self.spike_x_coord - 35 <= self.coords[0] <= self.spike_x_coord + 35 or self.spike2_x_coord - 35 <=
+                    self.coords[0] <= self.spike2_x_coord + 35):
+                self.game_over()
+                break
+            elif not self.running:
+                break
+        self.score += 2
+
+    def spikes_hard(self):
+        """
+        This method draws three spikes and causes them to fall from the top of the screen to the bottom of the screen. Every time a spike is dodged, this method adds 1 to the player's score.
+        Additionally, in order to detect collision, this method contains a conditional statement that will check if the character's x and y coordinates match those of the falling spikes. If so,
+        a Game Over is triggered.
+        """
+        self.scoreLabel.configure(text="Score: " + str(self.score))
+        self.rand_x = randrange(30, 570)
+        self.rand_x2 = randrange(30, 570)
+        self.rand_x3 = randrange(30, 570)
+        spike = self.game_window_canvas.create_oval(self.rand_x, -20, self.rand_x + 40, 50, fill='grey')
+        spike2 = self.game_window_canvas.create_oval(self.rand_x2, -20, self.rand_x2 + 40, 50, fill='grey')
+        spike3 = self.game_window_canvas.create_oval(self.rand_x3, -20, self.rand_x3 + 40, 50, fill='grey')
+        self.timeDelay = .006
+        for i in range(83):
+            self.i = i
+            threading.Thread(time.sleep(self.timeDelay)).run()
+            threading.Thread(self.game_window_canvas.move(spike, 0, 10)).run()
+            threading.Thread(self.game_window_canvas.move(spike2, 0, 10)).run()
+            threading.Thread(self.game_window_canvas.move(spike3, 0, 10)).run()
+            self.game_window_canvas.update()
+            self.spike_x_coord = self.rand_x
+            self.spike2_x_coord = self.rand_x2
+            self.spike3_x_coord = self.rand_x3
+            self.spike_y_coord = 50 + 10 * self.i
+            if self.spike_y_coord - 35 <= self.coords[1] <= self.spike_y_coord + 35 and (
+                    self.spike_x_coord - 35 <= self.coords[0] <= self.spike_x_coord + 35 or self.spike2_x_coord - 35 <=
+                    self.coords[0] <= self.spike2_x_coord + 35 or self.spike3_x_coord - 35 <= self.coords[
+                        0] <= self.spike3_x_coord + 35):
+                self.game_over()
+                break
+            elif not self.running:
+                break
+        self.score += 3
 
     def drawCharacter(self, x, y):
         """
@@ -158,9 +239,11 @@ class Dodger:
         self.game_window_canvas.bind('<B1-Motion>', self.movement)
 
         self.scoreLabel = ttk.Label(self.game_command_frame, text="Score: " + str(self.score))
-        self.scoreLabel.grid(row=1, columnspan=3)
+        self.scoreLabel.grid(row=1, column=1)
+        self.highScoreLabel = ttk.Label(self.game_command_frame, text="High Score: " + str(self.highScore))
+        self.highScoreLabel.grid(row=2, column=1)
         quit_button = ttk.Button(self.game_command_frame, text="Quit Game", command=self.quit_game)
-        quit_button.grid(row=2, columnspan=3)
+        quit_button.grid(row=3, columnspan=3)
 
     def quit_game(self):
         """
@@ -185,12 +268,31 @@ class Dodger:
         self.game_window.destroy()
         self.game_over_window = tk.Tk()
         self.game_over_window.title("Game Over")
-        self.game_over_window_canvas = tk.Canvas(width=400, height=200, bg='white')
-        self.game_over_window_canvas.create_text(200, 50, text="Game Over!", fill='red', font='Helvetica 28 bold')
-        self.game_over_window_canvas.create_text(200, 100, text="Final Score: " + str(self.score), fill='black', font='Helvetica 14 bold')
-        play_again_button = Button(self.game_over_window, text='Play Again', width=10, height=2, bd='10', command=self.play_again)
-        play_again_button.place(x=155, y=140)
-        self.game_over_window_canvas.pack()
+        if self.score > int(self.highScore):
+            self.game_over_window_canvas = tk.Canvas(width=400, height=250, bg='white')
+            self.game_over_window_canvas.create_text(200, 50, text="Game Over!", fill='red', font='Helvetica 28 bold')
+            self.game_over_window_canvas.create_text(200, 100, text="Congratulations!",
+                                                     fill='green', font='Helvetica 14 bold')
+            self.game_over_window_canvas.create_text(200, 125, text="You set a new High Score!",
+                                                     fill='green', font='Helvetica 14 bold')
+            self.game_over_window_canvas.create_text(200, 165, text="Final Score: " + str(self.score), fill='black',
+                                                     font='Helvetica 14 bold')
+            play_again_button = Button(self.game_over_window, text='Play Again', width=10, height=2, bd='10',
+                                       command=self.play_again)
+            play_again_button.place(x=155, y=185)
+            self.game_over_window_canvas.pack()
+            HighScore = open('HighScore.txt', 'w')
+            HighScore.write(str(self.score))
+            HighScore.close()
+        else:
+            self.game_over_window_canvas = tk.Canvas(width=400, height=200, bg='white')
+            self.game_over_window_canvas.create_text(200, 50, text="Game Over!", fill='red', font='Helvetica 28 bold')
+            self.game_over_window_canvas.create_text(200, 100, text="Final Score: " + str(self.score), fill='black',
+                                                     font='Helvetica 14 bold')
+            play_again_button = Button(self.game_over_window, text='Play Again', width=10, height=2, bd='10',
+                                       command=self.play_again)
+            play_again_button.place(x=155, y=140)
+            self.game_over_window_canvas.pack()
 
 # Create the entire GUI program
 program = Dodger()
